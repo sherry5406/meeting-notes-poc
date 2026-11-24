@@ -1,5 +1,11 @@
 # MeetingNotesPoc
 
+## GitHub Pages 部署
+
+此專案透過 `.github/workflows/deploy.yml` 部署。第一次部署前，請到 repository 的 **Settings → Pages → Build and deployment**，將 **Source** 設為 **GitHub Actions**。若未啟用 Pages，`deploy-pages` 會在建立 deployment 時回傳 404。
+
+之後 push 到 `main` 或從 Actions 手動執行 **Deploy to GitHub Pages** 即會重新部署。
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.7.
 
 ## Development server
