@@ -1,0 +1,60 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --ignore-scripts：跳過 onnxruntime-node 的原生安裝（瀏覽器用不到）
+      - run: npm ci --ignore-scripts
+
+      # 依 repo 名稱自動決定 base-href：
+      #   帳號.github.io 這種「使用者網站」放在根目錄；其他 repo 放在 /repo名稱/
+      - name: Build
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          case "$REPO" in
+            *.github.io) BASE="/" ;;
+            *) BASE="/${REPO}/" ;;
+          esac
+          echo "base-href = $BASE"
+          npx ng build --base-href "$BASE"
+
+      # GitHub Pages 沒有 SPA 回退：找不到的路徑會回傳 404.html，
+      # 所以把 index.html 複製一份當 404.html，讓 Angular 路由接手。
+      - name: SPA fallback
+        run: cp dist/meeting-notes-poc/browser/index.html dist/meeting-notes-poc/browser/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/meeting-notes-poc/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
